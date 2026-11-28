@@ -12,14 +12,15 @@ Turn a source song into a karaoke video with a backing track and accurately time
 - **Lyrics are burned in:** the finished video carries its own text. No separate subtitle file is delivered.
 - **Inputs are kept:** the source video, backing track, vocal stem, approved lyrics and editable subtitle file are saved, so a song can be corrected and rendered again.
 - **A person approves each song:** automated checks guide the review but never approve anything.
+- **One orchestrator language:** the pipeline as a whole is orchestrated in a single language, not yet chosen. The tools it runs may be written in others.
 
 ## Process
 
 | # | Stage | Input | Output | Who |
 |---|---|---|---|---|
-| 1 | Extract | Source link | Source video and audio | Automatic |
-| 2 | Isolate | Source audio | Backing track and vocal stem | Automatic |
-| 3 | Fetch lyrics | Artist and title | Lyrics, plus line times if available | Automatic |
+| 1 | Fetch lyrics | Artist and title | Lyrics, plus line times if available | Automatic |
+| 2 | Extract | Source link | Source video and audio | Automatic |
+| 3 | Isolate | Source audio | Backing track and vocal stem | Automatic |
 | 4 | Transcribe | Vocal stem | Transcript with rough times | Automatic |
 | 5 | Compare | Lyrics and transcript | Difference report | Automatic |
 | 6 | Resolve | Difference report and audio | Approved lyrics | Person |
@@ -30,13 +31,14 @@ Turn a source song into a karaoke video with a backing track and accurately time
 
 A song's progress is shown by which of its files exist.
 
-1. **Extract**
+1. **Fetch lyrics**
+   - Lyric availability is the first go/no-go for a song.
+   - Fetched lyrics may be wrong, untimed, or timed to a different edit of the song.
+2. **Extract**
    - Save the source video and its audio.
-2. **Isolate**
+3. **Isolate**
    - The backing track goes into the video.
    - The vocal stem is used for transcription, alignment and review.
-3. **Fetch lyrics**
-   - Fetched lyrics may be missing, wrong, untimed, or timed to a different edit of the song.
 4. **Transcribe**
    - Do not give the model the fetched lyrics, so the transcript is an independent check.
 5. **Compare**
@@ -75,14 +77,38 @@ A potential enhancement, not yet discussed: a list of suspect spots, worst first
 
 A similar difference on every line would be reported once, as a constant offset.
 
+## Code organization
+
+All code, including POC work, is treated as enterprise software, not one-off or ad-hoc scripts.
+
+- Root folders `python/`, `dotnet/` and `node/` each have a `pipeline/` folder, keeping pipeline code apart from other components.
+- Each tool selection (one tool used for one step) tried in a language gets its own subproject there, named `<step>-<tool>`, so POC code can be removed cleanly once decisions are made. For example, `dotnet/pipeline/isolate-sherpa-onnx/`. A tool covering two steps gets two subprojects.
+- A tool that is only run by hand needs no subproject; its results are still documented.
+- Subprojects do not depend on each other. If real duplication appears, decide then whether to add a shared subproject.
+- Each subproject is self-contained, with its own dependencies, tests, linting and README.
+- Folders are created only when there is real code.
+- The root `pipeline/` folder holds language-neutral documents and test data, shared by all subprojects.
+- A shared job is implemented once, unless we are deliberately comparing languages.
+
+**Orchestrator language:** the tentative preference is C#. It is the language the project owner is arguably strongest in, which helps review, maintenance and QA. JavaScript experience is mainly front-end, with little Node and less Python. The decision will be made in the integration discussion, after tool testing is complete.
+
+### Testing
+
+These apply to all three languages.
+
+- **Unit tests:** test each source file in isolation, with external dependencies replaced by test stand-ins. Test files mirror source files one to one.
+- **External integration tests:** check real files, web APIs and tools, including whether the stand-ins behave like them.
+- **End-to-end tests:** cover realistic multi-step workflows, with external dependencies replaced.
+- **Coverage:** report unit and integration coverage separately.
+
 ## Proof of concept
 
 The POC is for finding out which tools can do each step.
 
-1. **Test by step:** try each step's tools separately, using the [test songs](shoppingList.md). Run them by hand, with throwaway scripts where needed. Where tools are being compared, give them the same inputs.
+1. **Test by step:** try each step's tools separately, using the [test songs](testingData/shoppingList.json). Run them by hand; any code we write follows [Code organization](#code-organization). Where tools are being compared, give them the same inputs.
 2. **Document:** record what was run (versions, models and settings), problems installing or running it, processing time, output quality, manual effort, and how our code could call it.
 3. **Compare:** set the results for each step side by side.
-4. **Discuss:** weigh pros and cons, including how the preferred tools would work together and what language our own code would use.
+4. **Discuss:** weigh pros and cons, including how the preferred tools would work together, what language the orchestrator would use, and how it would handle tools in other languages.
 
 ## Tool options
 
@@ -91,6 +117,13 @@ Taken from project pages and documentation on 2026-11-28. **Nothing has been ins
 - **Forms:** a *CLI* is a command-line program that code in any language can run. A *library* is called from code in a supported language. A *web API* is called over the network. A *desktop app* is used by hand.
 - **Language:** for a CLI or web API, the tool's own language does not dictate ours. It still matters if we have to debug or change the tool.
 - Language lists show the ones relevant here (Python, C#) and are not complete.
+
+### Fetch lyrics
+
+| Source | Forms | Notes |
+|---|---|---|
+| [LRCLIB](https://lrclib.net/docs) | Web API | Plain and line-timed lyrics; some records have word times |
+| [Genius](https://docs.genius.com) | Web API | Documentation could not be fetched. Earlier notes say no synced lyrics, and no lyric text from the official API; unverified |
 
 ### Extract
 
@@ -106,13 +139,6 @@ Taken from project pages and documentation on 2026-11-28. **Nothing has been ins
 | [audio-separator](https://github.com/nomadkaraoke/python-audio-separator) | Python | CLI, Python library | MDX-Net, VR, Demucs, RoFormer | Can run Demucs models |
 | [sherpa-onnx](https://k2-fsa.github.io/sherpa/onnx/source-separation/index.html) | C++ (inferred) | CLI, libraries including Python and C# | Spleeter (2-stem), UVR MDX-Net | [C# examples](https://github.com/k2-fsa/sherpa-onnx/tree/master/dotnet-examples) include vocal removal |
 | [Ultimate Vocal Remover](https://github.com/Anjok07/ultimatevocalremovergui) | Python | Desktop app | MDX-Net, VR, MDX23C, Demucs | No documented CLI or library found on its main page |
-
-### Fetch lyrics
-
-| Source | Forms | Notes |
-|---|---|---|
-| [LRCLIB](https://lrclib.net/docs) | Web API | Plain and line-timed lyrics; some records have word times |
-| [Genius](https://docs.genius.com) | Web API | Documentation could not be fetched. Earlier notes say no synced lyrics, and no lyric text from the official API; unverified |
 
 ### Transcribe and align
 
@@ -159,7 +185,7 @@ For the POC to answer.
 - **Alignment:** how well does supplied text align to singing? Does it need rough times, and where would they come from?
 - **Highlighting:** word by word, or line by line? The answer affects what alignment must do.
 - **Review:** how long does correcting a song take, is that acceptable, and does the editor meet our needs?
-- **Integration:** how would the preferred tools connect, and what language would our code use?
+- **Integration:** after tool testing and documentation, how would the preferred tools connect, what language would the orchestrator use, and how would it handle tools in other languages?
 
 ## Future questions
 
