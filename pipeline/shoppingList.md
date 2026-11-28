@@ -7,22 +7,22 @@ Include at least one song that may lack synced lyrics on LRCLIB, such as somethi
 The video ID is the part after `v=` in a YouTube link: `youtube.com/watch?v=VIDEO_ID`
 
 - **Easy:** clear solo vocals at a moderate tempo
-  - Artist:
-  - Song title:
-  - YouTube video ID:
+  - Artist:Ernie Halter
+  - Song title:All I want For Christmas
+  - YouTube video ID:txtPsUMwf0Y
 - **Fast or dense:** rapid lyrics
-  - Artist:
-  - Song title:
-  - YouTube video ID:
+  - Artist:eminem
+  - Song title:rap god
+  - YouTube video ID:XbGs_qK2PQA
 - **Long instrumental breaks:** Whisper may invent text there
-  - Artist:
-  - Song title:
-  - YouTube video ID:
+  - Artist:Guns N Roses
+  - Song title:Sweet Child Of Mine
+  - YouTube video ID:1w7OgIMMRc4
 - **Heavy backing vocals or a duet:** harder to transcribe and display
-  - Artist:
-  - Song title:
-  - YouTube video ID:
+  - Artist:Queen
+  - Song title:Bohemian Rhapsody
+  - YouTube video ID:fJ9rUzIMcZQ
 - **Held or stylized singing:** a test for word timing
-  - Artist:
-  - Song title:
-  - YouTube video ID:
+  - Artist:nirvana
+  - Song title:smells like teen spirit
+  - YouTube video ID:hTWKbfoikeg
