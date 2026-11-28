@@ -1,6 +1,6 @@
 # Song Shopping List
 
-Songs for the Phase 0 hand test. Pick three to five. One song can cover more than one category: list it once and note the others.
+Songs for the proof of concept. Pick three to five. One song can cover more than one category: list it once and note the others.
 
 Include at least one song that may lack synced lyrics on LRCLIB, such as something obscure.
 

@@ -1,8 +1,6 @@
-# Karaoke Video Pipeline: Plan and Roadmap
+# Karaoke Video Pipeline: Roadmap
 
-**Status:** Draft for discussion. Development has not started.
-
-This expands on the original outline in [plan.md](plan.md). Where the two differ, this document reflects the later thinking. Tool behaviour described here has not yet been tested in this project.
+**Status:** Moving from ideation to proof of concept (POC). No pipeline code yet. This updates the original outline in [plan.md](plan.md).
 
 ## Goal
 
@@ -15,156 +13,164 @@ Turn a source song into a karaoke video with a backing track and accurately time
 - **Inputs are kept:** the source video, backing track, vocal stem, approved lyrics and editable subtitle file are saved, so a song can be corrected and rendered again.
 - **A person approves each song:** automated checks guide the review but never approve anything.
 
-## Stages
+## Process
 
 | # | Stage | Input | Output | Who |
 |---|---|---|---|---|
 | 1 | Extract | Source link | Source video and audio | Automatic |
 | 2 | Isolate | Source audio | Backing track and vocal stem | Automatic |
-| 3 | Fetch lyrics | Artist and title | Lyrics file, plus line times if available | Automatic |
+| 3 | Fetch lyrics | Artist and title | Lyrics, plus line times if available | Automatic |
 | 4 | Transcribe | Vocal stem | Transcript with rough times | Automatic |
-| 5 | Compare | Lyrics file and transcript | Difference report | Automatic |
+| 5 | Compare | Lyrics and transcript | Difference report | Automatic |
 | 6 | Resolve | Difference report and audio | Approved lyrics | Person |
-| 7 | Align | Approved lyrics, vocal stem, rough times | Timed words | Automatic |
-| 8 | Format | Timed words | Draft subtitle file | Automatic |
-| 9 | Review | Draft subtitles, both audio tracks | Approved subtitles | Person |
+| 7 | Align | Approved lyrics, vocal stem, rough times if needed | Timed words | Automatic |
+| 8 | Format | Timed words | Draft subtitles | Automatic |
+| 9 | Review | Draft subtitles, source audio and backing track | Approved subtitles | Person |
 | 10 | Render | Source video, backing track, approved subtitles | Finished video | Automatic |
 
-### 1–3. Gather materials
+A song's progress is shown by which of its files exist.
 
-- **Extract:** `yt-dlp` is the proposed tool.
-- **Isolate:** keep both outputs. The backing track goes into the video. The vocal stem is used for transcription, alignment and review. Ultimate Vocal Remover is mainly a desktop app, so `audio-separator` and Demucs are candidates for automation.
-- **Fetch lyrics:** [LRCLIB](https://lrclib.net) is the candidate source. It has line times for many songs, but not all, and they may belong to a different edit of the song. Genius does not provide synced lyrics, and its official API does not return lyric text.
+1. **Extract**
+   - Save the source video and its audio.
+2. **Isolate**
+   - The backing track goes into the video.
+   - The vocal stem is used for transcription, alignment and review.
+3. **Fetch lyrics**
+   - Fetched lyrics may be missing, wrong, untimed, or timed to a different edit of the song.
+4. **Transcribe**
+   - Do not give the model the fetched lyrics, so the transcript is an independent check.
+5. **Compare**
+   - For comparison only, ignore case, punctuation, line breaks and section labels. Standardize numbers and spelling variants, and expand repeat shorthand such as "x2".
+   - Group differences into passages with approximate times.
+   - List missing and extra passages before single words.
+6. **Resolve**
+   - Decide by listening. The transcript may mishear, skip repeats or invent text. Both sources can also agree and be wrong.
+7. **Align**
+   - Time the approved lyrics, not the transcript's text.
+   - If the aligner needs rough times, try the fetched line times where they match the recording, then the transcript's times. Some passages may need times entered by hand.
+8. **Format**
+   - Create editable, highlightable subtitles.
+   - Add line breaks, and a cue before singing resumes after a break.
+9. **Review**
+   - Play the whole song with subtitles overlaid, without rendering.
+   - Fix timing and text, then replay the corrected parts.
+   - Check timing against the source audio, and the singer's experience against the backing track.
+   - Check for wrong or missing words, bad line breaks, missing cues and audible damage from vocal removal.
+   - Approve the song. A [flagging report](#flagging-report) could help guide the review.
+10. **Render**
+    - Render approved songs only, replacing the audio with the backing track and burning in the subtitles.
+    - Proposed delivery: `Artist - Title.mp4`, H.264 video and AAC audio.
 
-### 4–6. Validate the lyrics
+### Flagging report
 
-This catches wrong lyrics before they turn into timing problems.
-
-- **Transcribe independently:** do not give Whisper the fetched lyrics as a hint.
-- **Clean up for comparison only:** ignore case, punctuation and line breaks. Remove section labels such as "[Chorus]". Standardize numbers and common spelling variants. Write out repeat shorthand such as "x2". The displayed lyrics keep their formatting.
-- **Report differences:** group them into passages, each with an approximate timestamp. List missing and extra passages before single words. Passages missing from the transcript may only have an estimated position.
-- **Resolve by listening:** neither source is automatically right. Whisper may mishear words, skip repeats or invent text during instrumentals.
-- **Agreement is not proof:** both sources can be wrong in the same place, so the final review checks the words again.
-
-### 7–8. Align and format
-
-- **Align:** call the WhisperX alignment step with the approved lyrics, rather than aligning its own transcript. It needs the text in segments with rough start and end times.
-- **Rough times:** use LRCLIB line times where they match the recording. Otherwise, try matching the approved lyrics to the transcript's segment times. Poorly transcribed passages may need times entered by hand.
-- **Format:** convert timed words into a subtitle file, including line breaks and a cue before singing resumes after a break. ASS is the proposed format because it supports karaoke highlighting. We expect to need our own conversion step.
-
-### 9. Review the timing
-
-1. Play the whole song with the subtitles overlaid, without rendering.
-2. Fix timing and text. [Aegisub](https://aegisub.org) is the proposed editor; try it before building anything custom.
-3. Replay the corrected parts.
-4. Check against the original vocals for timing, and against the backing track for the singer's experience.
-5. Check for wrong or missing words, bad line breaks, missing cues and audible damage from vocal removal.
-6. Approve the song.
-
-If alignment fails badly, check the lyrics, vocal stem and rough times to find the cause.
-
-#### Flagging report
-
-A list of suspect spots, worst first, each with a timestamp and a reason.
+A potential enhancement, not yet discussed: a list of suspect spots, worst first, each with a time and reason. It would not replace the full playthrough.
 
 | Check | Possible problem |
 |---|---|
-| A word has a low score or no timestamp | Alignment failed, or the text does not match the audio |
-| A word is implausibly short or long | Words are bunched up or stretched. Held notes may cause false alarms |
-| Words fall where the vocal stem is nearly silent | The highlight is in the wrong place |
-| The stem has sustained sound but no words | Lyrics are missing or shifted. Backing vocals and leftover instruments may cause false alarms |
-| Line starts differ widely from LRCLIB's | The alignment is wrong, or LRCLIB timed a different edit |
+| A word has a low score or no time | Failed alignment, or text that does not match the audio |
+| A word is implausibly short or long | Bunched or stretched words (held notes may be false alarms) |
+| Words fall where the vocal stem is nearly silent | Misplaced highlight |
+| The stem has sustained sound but no words | Missing or shifted lyrics (backing vocals or leftover instruments may be false alarms) |
+| Line starts differ widely from fetched times | Bad alignment, or times for a different edit |
 
-If every line differs from LRCLIB by about the same amount, report one **constant offset**. Check this against the audio, especially if LRCLIB times were used as alignment input.
+A similar difference on every line would be reported once, as a constant offset.
 
-These checks will not find every error. The full playthrough remains required.
+## Proof of concept
 
-### 10. Render
+The POC is for finding out which tools can do each step.
 
-- Only approved songs are rendered.
-- The video's audio is replaced with the backing track, and the subtitles are burned in. `FFmpeg` is the proposed tool.
-- **Delivered file (proposed):** MP4 with H.264 video and AAC audio, named `Artist - Title.mp4`. Resolution depends on playback testing on the Pi.
+1. **Test by step:** try each step's tools separately, using the [test songs](shoppingList.md). Run them by hand, with throwaway scripts where needed. Where tools are being compared, give them the same inputs.
+2. **Document:** record what was run (versions, models and settings), problems installing or running it, processing time, output quality, manual effort, and how our code could call it.
+3. **Compare:** set the results for each step side by side.
+4. **Discuss:** weigh pros and cons, including how the preferred tools would work together and what language our own code would use.
 
-## Song status
+## Tool options
 
-Each song needs a recorded status:
+Taken from project pages and documentation on 2026-11-28. **Nothing has been installed or tested.** Speech and alignment results on singing are unknown.
 
-**lyrics pending → lyrics approved → timing draft → timing approved → rendered**
+- **Forms:** a *CLI* is a command-line program that code in any language can run. A *library* is called from code in a supported language. A *web API* is called over the network. A *desktop app* is used by hand.
+- **Language:** for a CLI or web API, the tool's own language does not dictate ours. It still matters if we have to debug or change the tool.
+- Language lists show the ones relevant here (Python, C#) and are not complete.
 
-- Changing approved lyrics returns the song to **lyrics approved**. Alignment, formatting and timing review must be repeated. Decide how to preserve earlier manual timing fixes before building this.
-- Editing approved subtitles returns the song to **timing draft**. A previously rendered video is then out of date.
+### Extract
 
-## Hardware
+| Tool | Written in | Forms | Notes |
+|---|---|---|---|
+| [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Python | CLI | Library use not checked |
 
-The hand test will run on the current development machine (checked 2026-11-27):
+### Isolate
 
-- **Processor:** Intel N100, 4 cores
-- **Memory:** 15.8 GB
-- **Graphics:** integrated Intel UHD, no dedicated card. Plan on running the AI tools on the processor.
-- **Free disk space:** 113.1 GB
-- **Tools:** `ffmpeg` and `yt-dlp` are on PATH. Aegisub is not on PATH, so check whether it is installed. Python command aliases exist, but a working installation has not been verified.
+| Tool | Written in | Forms | Model families | Notes |
+|---|---|---|---|---|
+| [Demucs](https://github.com/adefossez/demucs) | Python | CLI, Python library | Demucs | Use this fork; the [original](https://github.com/facebookresearch/demucs) is archived. The fork's author says they are not actively working on it |
+| [audio-separator](https://github.com/nomadkaraoke/python-audio-separator) | Python | CLI, Python library | MDX-Net, VR, Demucs, RoFormer | Can run Demucs models |
+| [sherpa-onnx](https://k2-fsa.github.io/sherpa/onnx/source-separation/index.html) | C++ (inferred) | CLI, libraries including Python and C# | Spleeter (2-stem), UVR MDX-Net | [C# examples](https://github.com/k2-fsa/sherpa-onnx/tree/master/dotnet-examples) include vocal removal |
+| [Ultimate Vocal Remover](https://github.com/Anjok07/ultimatevocalremovergui) | Python | Desktop app | MDX-Net, VR, MDX23C, Demucs | No documented CLI or library found on its main page |
 
-## Roadmap
+### Fetch lyrics
 
-### Phase 0: Hand test
+| Source | Forms | Notes |
+|---|---|---|
+| [LRCLIB](https://lrclib.net/docs) | Web API | Plain and line-timed lyrics; some records have word times |
+| [Genius](https://docs.genius.com) | Web API | Documentation could not be fetched. Earlier notes say no synced lyrics, and no lyric text from the official API; unverified |
 
-Run three to five varied songs through the process before building it. Use existing tools and throwaway scripts, including a rough converter that produces files Aegisub can open.
+### Transcribe and align
 
-For each song, record:
+"Align" means timing text that we supply.
 
-- Song length, and processing time for isolation, transcription, alignment and a test render
-- Which models and settings were used
-- Whether alignment with supplied lyrics works well enough on singing
-- How many lyric differences were real errors in the lyrics file, and how many were Whisper's mistakes
-- Real lyric errors that the comparison missed
-- Whether rough times could be obtained without LRCLIB (try this even on songs that have it)
-- Time spent resolving lyrics and correcting timing
-- The automatic draft and the corrected version, saved separately
-- Errors each proposed check would have caught, and its false alarms
+| Tool | Written in | Forms | Transcribe | Align |
+|---|---|---|---|---|
+| [openai-whisper](https://github.com/openai/whisper) | Python | CLI, Python library | Yes | Not documented on its main page |
+| [WhisperX](https://github.com/m-bain/whisperX) | Python | CLI, Python library | Yes, with word times | Python alignment step takes timed text segments. Supplying our own lyrics there, directly or via CLI, needs testing |
+| [whisper.cpp](https://github.com/ggml-org/whisper.cpp) | C/C++ | CLI, C library, local web server | Yes; word times experimental | Not documented on its main page |
+| [Whisper.net](https://github.com/sandrohanea/whisper.net) | C# wrapper for whisper.cpp | C# library | Yes, with segment times | Not documented on its main page |
+| [CrispASR](https://github.com/CrispStrobe/CrispASR) | C++ | CLI, libraries including Python and [C#](https://github.com/CrispStrobe/CrispASR/blob/main/docs/bindings.md), local web server | Yes | Yes: [CLI](https://github.com/CrispStrobe/CrispASR/blob/main/docs/cli.md) accepts audio and plain text. Need for rough times not confirmed |
+| [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) | C++ (inferred) | CLI, libraries including Python and C# | Yes | Documented for the libraries, with C# examples. CLI alignment not confirmed |
 
-**Exit decisions:** choose word or line highlighting, decide whether the comparison step saves enough effort, and decide whether to continue with this approach. The sample is small, so treat the results as a first estimate.
+### Format
 
-### Phase 1: Core pipeline
+No ready-made tool has been chosen. We expect to write this conversion. ASS is the proposed subtitle format because it supports karaoke highlighting.
 
-Automate stages 1–4 and 7–8, add render and status tracking, and keep review in Aegisub. Resolve lyrics by hand until the comparison report exists.
+### Review
 
-### Phase 2: Lyric validation
+| Tool | Forms | Notes |
+|---|---|---|
+| [Aegisub](https://github.com/TypesettingTools/Aegisub) | Desktop app with Lua scripting | Subtitle timing editor. Switching between our two audio tracks needs testing |
 
-Build the cleanup and difference report (stage 5), if Phase 0 shows it is worthwhile.
+### Render
 
-### Phase 3: Flagging report
+| Tool | Written in | Forms |
+|---|---|---|
+| [FFmpeg](https://ffmpeg.org) | C | CLI, C libraries |
 
-Build only the checks that proved useful. Set thresholds from saved drafts and corrections, and keep measuring as more songs are processed.
+## Constraints
 
-## Unresolved issues
+- **Test machine (checked 2026-11-27):** Intel N100 (4 cores), 15.8 GB memory, integrated graphics only, 113.1 GB free disk. Plan on running AI tools on the processor.
+- **Python:** installing or upgrading it is not a concern. The concern is how readable, maintainable and testable our code is.
 
-### Product
+## Current questions
 
-- [ ] Word-by-word or line-by-line highlighting? Line-by-line may allow a simpler process when LRCLIB times match.
-- [ ] Is this for home or public use?
-- [ ] What are the rights and terms implications of the sources? Downloading with `yt-dlp` can breach a site's terms, and public playback raises separate licensing questions.
-- [ ] What happens when the source video already has text on screen?
-- [ ] How should backing vocals, duets and ad-libs be displayed?
-- [ ] What should the subtitles look like, and how should cues work?
-- [ ] Confirm the delivered format and the `Artist - Title.mp4` naming convention. The experience should list files with other names under their filename.
+For the POC to answer.
 
-### Technical
+- **Tools:** which are good enough at each step?
+- **Speed:** is the test machine fast enough?
+- **Lyrics:** do the fetched sources cover our songs, and how accurate are they?
+- **Transcription:** is it accurate enough to help find lyric errors?
+- **Alignment:** how well does supplied text align to singing? Does it need rough times, and where would they come from?
+- **Highlighting:** word by word, or line by line? The answer affects what alignment must do.
+- **Review:** how long does correcting a song take, is that acceptable, and does the editor meet our needs?
+- **Integration:** how would the preferred tools connect, and what language would our code use?
 
-- [ ] Is the current machine (no dedicated graphics card) fast enough for regular use, or only for the hand test?
-- [ ] Which Raspberry Pi model will play the videos, and what resolution can it play smoothly?
-- [ ] Which vocal isolation tool and model give good enough results?
-- [ ] Is LRCLIB's coverage good enough for our songs? What is the fallback when it has no lyrics?
-- [ ] Where do rough times come from when neither LRCLIB nor the transcript provides them?
-- [ ] Does Aegisub meet the review needs, including switching between audio tracks?
-- [ ] How are manual timing fixes preserved when lyrics change?
-- [ ] What language will the pipeline be written in, and how will it call the Python-based tools?
-- [ ] How will the user run each stage and resolve lyric differences?
-- [ ] How are working files and song status stored, and how much disk space is needed?
-- [ ] How do finished videos get to the Pi?
+## Future questions
 
-### To be answered by Phase 0
+Recorded so they are not forgotten. These are not tasks yet, and some may become irrelevant once the current questions are answered.
 
-- [ ] Is alignment with supplied lyrics accurate enough on singing?
-- [ ] How long does each song take to correct, and what is the acceptable limit?
-- [ ] Does the lyric comparison save more effort than it costs?
-- [ ] Which flagging checks are worth building?
+- **Enhancements:** is automating the lyric comparison or building a flagging report worthwhile?
+- **File state:** how are approved files told apart from drafts, and out-of-date files recognized?
+- **Corrections:** how are earlier timing fixes kept when lyrics change?
+- **Use:** how does the user run stages and resolve lyric differences?
+- **Storage:** how are working files stored, and how much space do they need?
+- **Audience:** home or public use? What rights and site terms apply to downloading and playing the sources?
+- **Display:** what should subtitles and cues look like? How are backing vocals, duets, ad-libs and existing on-screen text handled?
+- **Delivery:** is the proposed format and naming right? The experience should list other files by filename.
+- **Playback:** which Raspberry Pi model plays the videos, at what resolution, and how do videos get to it?
