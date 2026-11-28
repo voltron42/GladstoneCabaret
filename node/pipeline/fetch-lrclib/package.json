@@ -1,0 +1,26 @@
+{
+  "name": "fetch-lrclib",
+  "version": "0.1.0",
+  "description": "Fetch pinned LRCLIB lyric records (proof of concept)",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node src/main.ts",
+    "typecheck": "tsc",
+    "lint": "eslint . && prettier --check .",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "coverage:unit": "node --test --experimental-test-coverage \"--test-coverage-include=src/**\" \"test/unit/*.test.ts\"",
+    "coverage:integration": "node --test --experimental-test-coverage \"--test-coverage-include=src/**\" \"test/integration/**/*.test.ts\""
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.19.4",
+    "eslint": "10.16.0",
+    "prettier": "3.10.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.74.0"
+  }
+}

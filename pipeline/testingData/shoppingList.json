@@ -4,34 +4,39 @@
     "categoryDescription": "clear solo vocals at a moderate tempo",
     "artist": "Ernie Halter",
     "songTitle": "All I want For Christmas",
-    "youtubeVideoId": "txtPsUMwf0Y"
+    "youtubeVideoId": "txtPsUMwf0Y",
+    "lrclibRecordId": 16012238
   },
   {
     "category": "Fast or dense",
     "categoryDescription": "rapid lyrics",
     "artist": "eminem",
     "songTitle": "rap god",
-    "youtubeVideoId": "XbGs_qK2PQA"
+    "youtubeVideoId": "XbGs_qK2PQA",
+    "lrclibRecordId": 31849789
   },
   {
     "category": "Long instrumental breaks",
     "categoryDescription": "Whisper may invent text there",
     "artist": "Guns N Roses",
     "songTitle": "Sweet Child Of Mine",
-    "youtubeVideoId": "1w7OgIMMRc4"
+    "youtubeVideoId": "1w7OgIMMRc4",
+    "lrclibRecordId": 7179055
   },
   {
     "category": "Heavy backing vocals or a duet",
     "categoryDescription": "harder to transcribe and display",
     "artist": "Queen",
     "songTitle": "Bohemian Rhapsody",
-    "youtubeVideoId": "fJ9rUzIMcZQ"
+    "youtubeVideoId": "fJ9rUzIMcZQ",
+    "lrclibRecordId": 7359105
   },
   {
     "category": "Held or stylized singing",
     "categoryDescription": "a test for word timing",
     "artist": "nirvana",
     "songTitle": "smells like teen spirit",
-    "youtubeVideoId": "hTWKbfoikeg"
+    "youtubeVideoId": "hTWKbfoikeg",
+    "lrclibRecordId": 3837680
   }
 ]

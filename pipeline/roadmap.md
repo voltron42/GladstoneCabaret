@@ -32,7 +32,7 @@ Turn a source song into a karaoke video with a backing track and accurately time
 A song's progress is shown by which of its files exist.
 
 1. **Fetch lyrics**
-   - Lyric availability is the first go/no-go for a song.
+   - Lyric availability is the first go/no-go for a song. Plain lyrics are enough for a go; line times are a bonus.
    - Fetched lyrics may be wrong, untimed, or timed to a different edit of the song.
 2. **Extract**
    - Save the source video and its audio.
@@ -88,7 +88,8 @@ All code, including POC work, is treated as enterprise software, not one-off or 
 - Each subproject is self-contained, with its own dependencies, tests, linting and README.
 - Folders are created only when there is real code.
 - The root `pipeline/` folder holds language-neutral documents and test data, shared by all subprojects.
-- A shared job is implemented once, unless we are deliberately comparing languages.
+- Until the orchestrator language is decided, every tool test is built in all three languages, so they can be properly compared.
+- Implementations of the same selection follow one behaviour spec in `pipeline/specs/`. Results are recorded in `pipeline/results/`.
 
 **Orchestrator language:** the tentative preference is C#. It is the language the project owner is arguably strongest in, which helps review, maintenance and QA. JavaScript experience is mainly front-end, with little Node and less Python. The decision will be made in the integration discussion, after tool testing is complete.
 
@@ -104,6 +105,8 @@ These apply to all three languages.
 ## Proof of concept
 
 The POC is for finding out which tools can do each step.
+
+Results so far: [fetch lyrics with LRCLIB](results/fetch-lrclib.md).
 
 1. **Test by step:** try each step's tools separately, using the [test songs](testingData/shoppingList.json). Run them by hand; any code we write follows [Code organization](#code-organization). Where tools are being compared, give them the same inputs.
 2. **Document:** record what was run (versions, models and settings), problems installing or running it, processing time, output quality, manual effort, and how our code could call it.

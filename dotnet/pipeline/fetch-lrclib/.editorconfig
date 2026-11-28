@@ -1,0 +1,10 @@
+root = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+csharp_style_namespace_declarations = file_scoped:warning
+
+# Test names use underscores to read as sentences.
+[tests/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none
